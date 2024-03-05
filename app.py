@@ -1,34 +1,41 @@
-import random
-
-import streamlit as st
-from scripts.html_templates import css
 import csv
+import json
 import os
+import random
 import re
 import time
+import warnings
+from urllib.parse import urljoin
+
 import keyboard
+import numpy as np
+import pandas as pd
+import requests
 import spotipy
-from spotipy.oauth2 import SpotifyClientCredentials
-import pandas as pd
-import re
-import pandas as pd
+import streamlit as st
+import yt_dlp
 from bs4 import BeautifulSoup
-import json
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from selenium.webdriver.edge.options import Options
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.chrome.options import Options
-
-import time
-from selenium.webdriver.edge.options import Options
-import requests
-import numpy as np
-from urllib.parse import urljoin
-import yt_dlp
+from spotipy.oauth2 import SpotifyClientCredentials
 from yt_dlp.postprocessor import MetadataParserPP
-import warnings
+from scripts.html_templates import css
+from dotenv import load_dotenv
+
+
+
 warnings.filterwarnings('ignore')
+
+CLIENT_ID = os.environ.get("CLIENT_ID")
+CLIENT_SECRET = os.environ.get("CLIENT_SECRET")
+OUTPUT_FILE_NAME = "test.csv"
+print(CLIENT_ID)
+print(CLIENT_SECRET)
+
 
 
 def calculate_score(track, artist, duration, name_found, duration_found):
@@ -59,7 +66,7 @@ def next_step():
     row = track_df[track_df['Track Found'] == st.session_state.selected]
     row = row.head(1)
     print(row)
-    new_df = new_df.append(row)
+    new_df = pd.concat([new_df,row],ignore_index=True)
     new_df.to_csv("URLS_SELECTED.csv", sep=";", index=False)
     st.session_state.position += 1
     del st.session_state.selected
@@ -97,9 +104,6 @@ if "selected_df" not in st.session_state:
     selected_df.to_csv("URLS_SELECTED.csv", sep=";", index=False)
     st.session_state.selected_df = selected_df
 
-CLIENT_ID = os.environ['id']
-CLIENT_SECRET = os.environ['secret']
-OUTPUT_FILE_NAME = "test.csv"
 
 
 
