@@ -8,6 +8,7 @@ How to:
 
 - In the projects terminal, install the requirements using "pip install -r requirements"
 - Create a .env with the variables "id" and "secret" (for help see "https://medium.com/@michaelmiller0998/extracting-song-data-from-spotify-using-spotipy-167728d0a924")
+- Create a directory called "songs"
 - In the projects terminal, run "streamlit run app.py"
 - If your browser is not opening automatically, visit "http://localhost:8501"
 - Simply paste a Spotify playlist link. 
@@ -39,7 +40,7 @@ Project Organization
 │  └── ...                             <- Your downloaded songs
 │
 ├── data
-│  └── pictures                        <- pcitures for UI
+│  └── pictures                        <- pictures for UI
 │
 └── scripts
    └── html_template.py                <- html/css for streamlit
