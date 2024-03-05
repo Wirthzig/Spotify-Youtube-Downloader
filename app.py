@@ -10,9 +10,7 @@ import keyboard
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import pandas as pd
-import pyautogui
 import re
-
 import pandas as pd
 from bs4 import BeautifulSoup
 import json
@@ -41,11 +39,6 @@ def calculate_score(track, artist, duration, name_found, duration_found):
         score += 1
     if any(keyword in name_found.lower() for keyword in artist):
         score += 1
-    # duration_difference = abs(duration - duration_found)
-    # if duration_difference <= 10:  # You can adjust the threshold as needed
-    #    score += 2
-    # elif duration_difference <= 30:
-    #    score += 1
     keywords = ["lyrics", "extended", "audio"]
     if any(keyword in name_found.lower() for keyword in keywords):
         score += 2
@@ -104,8 +97,8 @@ if "selected_df" not in st.session_state:
     selected_df.to_csv("URLS_SELECTED.csv", sep=";", index=False)
     st.session_state.selected_df = selected_df
 
-CLIENT_ID ="060e33ba970443298b44ec8d7be5ab5f"
-CLIENT_SECRET = "2f58982eaaf64b3dbcafc1c207b2ea77"
+CLIENT_ID = os.environ['id']
+CLIENT_SECRET = os.environ['secret']
 OUTPUT_FILE_NAME = "test.csv"
 
 
