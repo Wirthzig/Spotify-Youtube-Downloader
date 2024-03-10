@@ -1,6 +1,8 @@
 Spotify-Youtube-Downloader
 ==============================
 
+![Screenshot 2024-03-10 at 22 09 16](https://github.com/Wirthzig/Spotify-Youtube-Downloader/assets/58438887/94b171ad-eab7-400a-b722-25c0df2417ea)
+
 Easily download all songs of your Spotify playlist from Youtube with this repo.
 
 How to:
