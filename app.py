@@ -53,12 +53,14 @@ def calculate_score(track, artist, duration, name_found, duration_found):
     return score
 
 
-def next_step():
+def next_step(t, a):
     print("User Clicked---------------------------------------")
     print("Selected:" + str(st.session_state.selected))
     sel = st.session_state.selected.split(" ")
     print(sel)
     track_df = pd.read_csv("URLS.csv", sep=";")
+    track_df = track_df[track_df['Track'] == t]
+    track_df = track_df[track_df['Artist'] == a]
     print(track_df)
     print("Position:" + str(st.session_state.position))
     new_df = pd.read_csv("URLS_SELECTED.csv", sep=";")
@@ -207,8 +209,8 @@ if "df" not in st.session_state:
 
             archive = pd.read_csv("Archive.csv",sep=";")
             archive_tracks = list(archive["Track"])
-            archive_artists = list(archive["Artists"])
-
+            archive_artists = list(archive["Artist"])
+            new_songs_check = False
             for index, row in df.iterrows():
                 track = row["Track"]
                 artist = row["Artists"]
@@ -217,9 +219,8 @@ if "df" not in st.session_state:
                 counter += steps
                 if counter > 100:
                     counter = 100
-                
-
                 if track not in archive_tracks and artist not in archive_artists:
+                    new_songs_check = True
                     my_bar.progress(round(counter), text=f"{track} - {artist}")
                     print("-----------------------------------------------------------------------------------")
                     print(f"Currently at song {track} by {artist} ({duration}min)")
@@ -250,7 +251,7 @@ if "df" not in st.session_state:
                             score.append(calculate_score(track, artist, duration, video_text, video_length))
                 else:
                     my_bar.progress(round(counter), text=f"{track} - {artist} is already in the archive, skipping song...")
-                    time.sleep(2)
+                    time.sleep(0.01)
 
             driver.quit()
             dict = {'Track': tracks, 'Artist': artists, "Duration": durations, "Track Found": names,
@@ -259,6 +260,7 @@ if "df" not in st.session_state:
             df.to_csv("URLS.csv", sep= ";", index=False)
             time.sleep(2)
             my_bar.empty()
+
             response = f"Done! We scraped all URLS, now its time for you to evaluate."
             full_response= ""
             full_response_0 = ""
@@ -271,12 +273,24 @@ if "df" not in st.session_state:
             message_placeholder.markdown(full_response_0, unsafe_allow_html=True)
             st.markdown('<br><hr style="height:2px;border-width:0;color:gray;background-color:#2B2A2A"><br>', unsafe_allow_html=True)
 
-            with st.spinner():
-                time.sleep(2)
             st.session_state.df = df
+            st.session_state.new_songs_check = new_songs_check
             st.experimental_rerun()
 
 elif "download" not in st.session_state:
+
+    if st.session_state.new_songs_check == False:
+        response =  "All songs were already downloaded before. We are done here :)"
+        full_response= ""
+        full_response_0 = ""
+        message_placeholder = st.empty()
+        for chunk in response.split():
+            full_response_0+=chunk + " "
+            time.sleep(0.05)
+            message_placeholder.markdown(full_response_0 + "❚",
+                                        unsafe_allow_html=True)
+        message_placeholder.markdown(full_response_0, unsafe_allow_html=True)
+        st.markdown('<br><hr style="height:2px;border-width:0;color:gray;background-color:#2B2A2A"><br>', unsafe_allow_html=True)
     # Selection #################################################################################################
     # Initialize new DataFrame to store selected rows
     if "selected" not in st.session_state:
@@ -304,17 +318,16 @@ elif "download" not in st.session_state:
         if st.session_state.selected == "None":
             selected_option = st.radio(f"Select row for {track} - Artist: {artist}", ["None"] + track_options)
             if st.button("Send!"):
-                if selected_option != "None":
-                    st.session_state.selected = selected_option
-                    next_step()
+                st.session_state.selected = selected_option
+                next_step(track, artist)
 
-                    if st.session_state.position >= len(unique_tracks):
-                            with st.spinner():
-                                time.sleep(2)
-                            st.session_state.download = "Yes"
-                            st.experimental_rerun()
+                if st.session_state.position >= len(unique_tracks):
+                        with st.spinner():
+                            time.sleep(2)
+                        st.session_state.download = "Yes"
+                        st.rerun()
 
-                    else: st.experimental_rerun()
+                else: st.rerun()
 
 else:
     # Display selected rows
@@ -322,38 +335,51 @@ else:
     print(selected_df)
     
 
-    st.write("Great! Now we will download the selected videos for you. This won't take long :)")
-    progress_text = "Downloading Tracks..."
-    my_bar = st.progress(0, text=progress_text)
-    steps = 100 / len(selected_df)
-    counter = 0
-
-    for index, row in selected_df.iterrows():
-        time.sleep(0.01)
-        counter += steps
-        if counter > 100:
-            counter = 100
-        track = row["Track"]
-        artist = row["Artist"]
-        url = row["URL Found"]
-        my_bar.progress(round(counter), text=f"{track} - {artist}")
-
-        download(track, artist, url)
-
-    update_archive(selected_df)
-
-    time.sleep(2)
-    my_bar.empty()
-    response = f"Done! We downloaded all songs for you. Enjoy your jam session! :)"
-    full_response = ""
+    response =  "All songs are ready to be downloaded! Click to continue."
+    full_response= ""
     full_response_0 = ""
     message_placeholder = st.empty()
     for chunk in response.split():
-        full_response_0 += chunk + " "
+        full_response_0+=chunk + " "
         time.sleep(0.05)
         message_placeholder.markdown(full_response_0 + "❚",
-                                     unsafe_allow_html=True)
+                                    unsafe_allow_html=True)
     message_placeholder.markdown(full_response_0, unsafe_allow_html=True)
+    st.markdown('<hr style="height:2px;border-width:0;color:gray;background-color:#2B2A2A">', unsafe_allow_html=True)
+
+
+    if st.button("Download now!"):
+        progress_text = "Downloading Tracks..."
+        my_bar = st.progress(0, text=progress_text)
+        steps = 100 / len(selected_df)
+        counter = 0
+
+        for index, row in selected_df.iterrows():
+            time.sleep(0.01)
+            counter += steps
+            if counter > 100:
+                counter = 100
+            track = row["Track"]
+            artist = row["Artist"]
+            url = row["URL Found"]
+            my_bar.progress(round(counter), text=f"{track} - {artist}")
+            if url != "None":
+                download(track, artist, url)
+
+        update_archive(selected_df)
+
+        time.sleep(2)
+        my_bar.empty()
+        response = f"Done! We downloaded all songs for you. Enjoy your jam session! :)"
+        full_response = ""
+        full_response_0 = ""
+        message_placeholder = st.empty()
+        for chunk in response.split():
+            full_response_0 += chunk + " "
+            time.sleep(0.05)
+            message_placeholder.markdown(full_response_0 + "❚",
+                                        unsafe_allow_html=True)
+        message_placeholder.markdown(full_response_0, unsafe_allow_html=True)
 
 
 
