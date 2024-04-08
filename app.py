@@ -71,6 +71,11 @@ def next_step():
     st.session_state.position += 1
     del st.session_state.selected
 
+def update_archive(new_downloads, archive_path="Archive.csv"):
+    archive = pd.read_csv(archive_path,sep=";")
+    new_df = pd.concat([archive,new_downloads],ignore_index=True)
+    new_df.to_csv("Archive.csv", sep=";", index=False)
+
 
 def download(title, artist, url):
     song = f"{artist} - {title}"
@@ -200,6 +205,10 @@ if "df" not in st.session_state:
             durations_found = []
             score = []
 
+            archive = pd.read_csv("Archive.csv",sep=";")
+            archive_tracks = list(archive["Track"])
+            archive_artists = list(archive["Artists"])
+
             for index, row in df.iterrows():
                 track = row["Track"]
                 artist = row["Artists"]
@@ -208,35 +217,40 @@ if "df" not in st.session_state:
                 counter += steps
                 if counter > 100:
                     counter = 100
-                my_bar.progress(round(counter), text=f"{track} - {artist}")
+                
 
-                print("-----------------------------------------------------------------------------------")
-                print(f"Currently at song {track} by {artist} ({duration}min)")
-                combined = f"{track}+{artist}"
-                combined = combined.replace(",", " ").replace("'", " ").replace("-", " ").replace("(", " ").replace(")"," ").replace("_", " ").replace(" ", "+")
-                url = f'https://www.youtube.com/results?search_query={combined}'
-                print(url)
-                driver.get(url)
-                path = '/html/body/ytd-app/div[1]/ytd-page-manager/ytd-search/div[1]/ytd-two-column-search-results-renderer/div/ytd-section-list-renderer/div[2]/ytd-item-section-renderer/div[3]/ytd-video-renderer[1]/div[1]/div/div[1]/div/h3/a/yt-formatted-string'
-                element = wait.until(EC.element_to_be_clickable((By.XPATH, path)))
-                page_source = driver.page_source
-                soup = BeautifulSoup(page_source, 'html.parser')
-                counter_2 = 0
-                for vid in soup.findAll(attrs={'class': 'yt-simple-endpoint style-scope ytd-video-renderer'}):
-                    counter_2 = counter_2 + 1
-                    if counter_2 <= 5:
-                        video_link = 'https://www.youtube.com' + vid['href']
-                        video_text = vid.text.replace("\n", "")
-                        video_length_split = vid["aria-label"].split(" ")
-                        print(video_text)
-                        video_length = f"{video_length_split[-4]}.{video_length_split[-2]}"
-                        tracks.append(track)
-                        artists.append(artist)
-                        durations.append(duration)
-                        urls.append(video_link)
-                        names.append(video_text)
-                        durations_found.append(video_length)
-                        score.append(calculate_score(track, artist, duration, video_text, video_length))
+                if track not in archive_tracks and artist not in archive_artists:
+                    my_bar.progress(round(counter), text=f"{track} - {artist}")
+                    print("-----------------------------------------------------------------------------------")
+                    print(f"Currently at song {track} by {artist} ({duration}min)")
+                    combined = f"{track}+{artist}"
+                    combined = combined.replace(",", " ").replace("'", " ").replace("-", " ").replace("(", " ").replace(")"," ").replace("_", " ").replace(" ", "+")
+                    url = f'https://www.youtube.com/results?search_query={combined}'
+                    print(url)
+                    driver.get(url)
+                    path = '/html/body/ytd-app/div[1]/ytd-page-manager/ytd-search/div[1]/ytd-two-column-search-results-renderer/div/ytd-section-list-renderer/div[2]/ytd-item-section-renderer/div[3]/ytd-video-renderer[1]/div[1]/div/div[1]/div/h3/a/yt-formatted-string'
+                    element = wait.until(EC.element_to_be_clickable((By.XPATH, path)))
+                    page_source = driver.page_source
+                    soup = BeautifulSoup(page_source, 'html.parser')
+                    counter_2 = 0
+                    for vid in soup.findAll(attrs={'class': 'yt-simple-endpoint style-scope ytd-video-renderer'}):
+                        counter_2 = counter_2 + 1
+                        if counter_2 <= 5:
+                            video_link = 'https://www.youtube.com' + vid['href']
+                            video_text = vid.text.replace("\n", "")
+                            video_length_split = vid["aria-label"].split(" ")
+                            print(video_text)
+                            video_length = f"{video_length_split[-4]}.{video_length_split[-2]}"
+                            tracks.append(track)
+                            artists.append(artist)
+                            durations.append(duration)
+                            urls.append(video_link)
+                            names.append(video_text)
+                            durations_found.append(video_length)
+                            score.append(calculate_score(track, artist, duration, video_text, video_length))
+                else:
+                    my_bar.progress(round(counter), text=f"{track} - {artist} is already in the archive, skipping song...")
+                    time.sleep(2)
 
             driver.quit()
             dict = {'Track': tracks, 'Artist': artists, "Duration": durations, "Track Found": names,
@@ -306,7 +320,7 @@ else:
     # Display selected rows
     selected_df = pd.read_csv("URLS_SELECTED.csv", sep = ";")
     print(selected_df)
-
+    
 
     st.write("Great! Now we will download the selected videos for you. This won't take long :)")
     progress_text = "Downloading Tracks..."
@@ -326,6 +340,7 @@ else:
 
         download(track, artist, url)
 
+    update_archive(selected_df)
 
     time.sleep(2)
     my_bar.empty()
